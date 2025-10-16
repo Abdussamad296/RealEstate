@@ -37,6 +37,7 @@ const About = () => {
             {/* --- 1. Hero Section: Full Screen Banner --- */}
             <section className="relative h-screen flex items-center justify-center">
                 {/* Background Image with Overlay */}
+                
                 <img 
                     src="https://www.technocrazed.com/wp-content/uploads/2015/12/Home-Wallpaper-32.jpg" 
                     alt="Modern house exterior with sunset light" 
