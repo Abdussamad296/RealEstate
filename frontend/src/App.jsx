@@ -1,0 +1,51 @@
+import React from "react";
+import HomePage from "./Pages/HomePage";
+import SignIn from "./Pages/SignIn";
+import SignUp from "./Pages/SignUp";
+import About from "./Pages/About";
+import Profile from "./Pages/Profile";
+import { BrowserRouter, Route, Routes } from "react-router-dom";
+import Header from "./Components/Header";
+import PrivateRoute from "./Components/PrivateRoute";
+import CreateListing from "./Pages/CreateListing";
+import ListingDetails from "./Pages/ListingDetails";
+import OtpVerification from "./Pages/OtpVerification";
+import ForgotPasswordModal from "./Pages/ForgotPassword";
+import ResetPassword from "./Pages/ResetPassword";
+import ContactUs from "./Pages/Contact";
+import DashboardLayout from "./Components/DashboardLayout";
+import Combineddashboard from "./Pages/Dashboard/Combineddashboard";
+
+const App = () => {
+  return (
+    <div>
+      <BrowserRouter>
+        <Header />
+
+        <Routes>
+          {/* Public pages (no Sidebar) */}
+          <Route path="/" element={<HomePage />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/contact" element={<ContactUs />} />
+          <Route path="/sign-in" element={<SignIn />} />
+          <Route path="/sign-up" element={<SignUp />} />
+          <Route path="/otp-verification" element={<OtpVerification />} />
+          <Route path="/forgot-password" element={<ForgotPasswordModal />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
+
+          {/* Private pages (Sidebar appears) */}
+          <Route element={<PrivateRoute />}>
+            <Route element={<DashboardLayout />}>
+              <Route path="/dashboard" element={<Combineddashboard />} />
+              <Route path="/profile" element={<Profile />} />
+              <Route path="/create-listing" element={<CreateListing />} />
+              <Route path="/listing/:id" element={<ListingDetails />} />
+            </Route>
+          </Route>
+        </Routes>
+      </BrowserRouter>
+    </div>
+  );
+};
+
+export default App;
