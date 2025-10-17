@@ -186,9 +186,9 @@ const CreateListing = () => {
   };
 
   return (
-    <main className="p-6 max-w-7xl mx-auto font-sans bg-gray-100">
-      <div className="bg-white p-8 rounded-2xl shadow-xl">
-        <h1 className="text-4xl font-extrabold text-center text-gray-900 mb-10">
+    <main className="p-4 max-w-7xl mx-auto font-sans mt-10">
+      <div className="p-8 rounded-2xl shadow-xl">
+        <h1 className="text-3xl font-bold text-center text-gray-900 mb-10">
           {isEditing ? "Edit Listing ✏️" : "Create a Listing 🏡"}
         </h1>
 
@@ -206,7 +206,7 @@ const CreateListing = () => {
                 value={formData.name}
                 onChange={handleChange}
                 placeholder="Listing Name"
-                className="w-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200"
+                className="w-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200 text-sm"
                 required
               />
               <textarea
@@ -215,7 +215,7 @@ const CreateListing = () => {
                 value={formData.description}
                 onChange={handleChange}
                 placeholder="Write a detailed description..."
-                className="w-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200 resize-none h-40"
+                className="w-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200 resize-none h-40 text-sm"
                 required
               />
               <input
@@ -225,13 +225,13 @@ const CreateListing = () => {
                 value={formData.address}
                 onChange={handleChange}
                 placeholder="Full Address"
-                className="w-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200"
+                className="w-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200 text-sm"
                 required
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-              <div className="flex items-center gap-2">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+              <div className="flex items-center gap-1">
                 <input
                   type="radio"
                   id="rent"
@@ -239,9 +239,9 @@ const CreateListing = () => {
                   value="rent"
                   checked={formData.type === "rent"}
                   onChange={handleChange}
-                  className="accent-blue-600 w-5 h-5"
+                  className="accent-blue-600 w-3 h-3  "
                 />
-                <label htmlFor="rent" className="text-gray-700">Rent</label>
+                <label htmlFor="rent" className="text-gray-700 text-sm">Rent</label>
               </div>
               <div className="flex items-center gap-2">
                 <input
@@ -251,48 +251,48 @@ const CreateListing = () => {
                   value="sale"
                   checked={formData.type === "sale"}
                   onChange={handleChange}
-                  className="accent-blue-600 w-5 h-5"
+                  className="accent-blue-600 w-4 h-4"
                 />
-                <label htmlFor="sale" className="text-gray-700">Sale</label>
+                <label htmlFor="sale" className="text-gray-700 text-sm">Sale</label>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1">
                 <input
                   type="checkbox"
                   id="furnished"
                   name="furnished"
                   checked={formData.furnished}
                   onChange={handleChange}
-                  className="accent-blue-600 w-5 h-5"
+                  className="accent-blue-600 w-4 h-4"
                 />
-                <label htmlFor="furnished" className="text-gray-700">Furnished</label>
+                <label htmlFor="furnished" className="text-gray-700 text-sm">Furnished</label>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1">
                 <input
                   type="checkbox"
                   id="parking"
                   name="parking"
                   checked={formData.parking}
                   onChange={handleChange}
-                  className="accent-blue-600 w-5 h-5"
+                  className="accent-blue-600 w-4 h-4"
                 />
-                <label htmlFor="parking" className="text-gray-700">Parking</label>
+                <label htmlFor="parking" className="text-gray-700 text-sm">Parking</label>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1">
                 <input
                   type="checkbox"
                   id="offer"
                   name="offer"
                   checked={formData.offer}
                   onChange={handleChange}
-                  className="accent-blue-600 w-5 h-5"
+                  className="accent-blue-600 w-4 h-4"
                 />
-                <label htmlFor="offer" className="text-gray-700">Offer</label>
+                <label htmlFor="offer" className="text-gray-700 text-sm">Offer</label>
               </div>
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 items-end">
               <div>
-                <label htmlFor="bedrooms" className="block text-sm font-medium text-gray-700 mb-1">Bedrooms</label>
+                <label htmlFor="bedrooms" className="block text-sm font-semibold text-gray-700 mb-1">Bedrooms</label>
                 <input
                   type="number"
                   id="bedrooms"
@@ -301,12 +301,12 @@ const CreateListing = () => {
                   onChange={handleChange}
                   min={1}
                   max={10}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
                   required
                 />
               </div>
               <div>
-                <label htmlFor="bathrooms" className="block text-sm font-medium text-gray-700 mb-1">Bathrooms</label>
+                <label htmlFor="bathrooms" className="block text-sm font-semibold text-gray-700 mb-1">Bathrooms</label>
                 <input
                   type="number"
                   id="bathrooms"
@@ -315,12 +315,12 @@ const CreateListing = () => {
                   onChange={handleChange}
                   min={1}
                   max={10}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
                   required
                 />
               </div>
               <div>
-                <label htmlFor="regularPrice" className="block text-sm font-medium text-gray-700 mb-1">Regular Price ($)</label>
+                <label htmlFor="regularPrice" className="block text-sm font-semibold text-gray-700 mb-1">Regular Price ($)</label>
                 <input
                   type="number"
                   id="regularPrice"
@@ -328,12 +328,12 @@ const CreateListing = () => {
                   value={formData.regularPrice}
                   onChange={handleChange}
                   min={1}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
                   required
                 />
               </div>
               <div>
-                <label htmlFor="discountedPrice" className="block text-sm font-medium text-gray-700 mb-1">Discounted Price ($)</label>
+                <label htmlFor="discountedPrice" className="block text-sm font-semibold text-gray-700 mb-1">Discounted Price ($)</label>
                 <input
                   type="number"
                   id="discountedPrice"
@@ -341,7 +341,7 @@ const CreateListing = () => {
                   value={formData.discountedPrice}
                   onChange={handleChange}
                   min={0}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
                   disabled={!formData.offer}
                 />
               </div>
@@ -351,15 +351,15 @@ const CreateListing = () => {
           {/* Right Column - Image Upload */}
           <div className="flex flex-col gap-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Upload New Images (Max 6 total)</label>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Upload New Images (Max 6 total)</label>
               <input
-                type="file"
+                type="file"  
                 id="images"
                 name="images"
                 onChange={handleChange}
                 multiple
                 accept=".jpg,.jpeg,.png"
-                className="w-full p-3 border border-gray-300 rounded-lg file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                className="w-full p-3 border border-gray-300 rounded-lg file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 text-sm"
                 disabled={formData.images.length + existingImages.length >= 6}
                 required={existingImages.length + formData.images.length === 0}
               />
@@ -399,7 +399,7 @@ const CreateListing = () => {
 
             {/* New Uploaded Images */}
             <div className="mt-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">New Uploaded Images</label>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">New Uploaded Images</label>
               <div className="flex flex-wrap gap-4">
                 {formData.images.length > 0 ? (
                   formData.images.map((image, index) => (
@@ -422,14 +422,14 @@ const CreateListing = () => {
                     </div>
                   ))
                 ) : (
-                  <p className="text-gray-400 italic">No new images uploaded yet.</p>
+                  <p className="text-gray-400 italic text-sm">No new images uploaded yet.</p>
                 )}
               </div>
             </div>
 
             <button
               type="submit"
-              className="mt-4 w-full p-4 bg-blue-600 text-white font-bold rounded-lg shadow-lg hover:bg-blue-700 transition duration-200 ease-in-out"
+              className="mt-4 w-full p-3 bg-[#1F4B43] text-white font-bold rounded-full shadow-lg hover:bg-green-950 transition duration-200 ease-in-out text-lg cursor-pointer"
               disabled={isSubmitting}
             >
               {isSubmitting ? (isEditing ? "Updating..." : "Creating...") : (isEditing ? "Update Listing" : "Create Listing")}

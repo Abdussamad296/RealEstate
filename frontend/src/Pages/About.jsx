@@ -35,6 +35,7 @@ const About = () => {
     return (
         <div>
             {/* --- 1. Hero Section: Full Screen Banner --- */}
+            
             <section className="relative h-screen flex items-center justify-center">
                 {/* Background Image with Overlay */}
                 
