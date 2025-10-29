@@ -367,7 +367,8 @@ export const getUserListings = async (req, res) => {
     }
 
     // Fetch listings created by this user
-    const listings = await Listing.find({ user: userRef }).sort({ createdAt: -1 });
+    const listings = await Listing.find({ userRef: userRef }).sort({ createdAt: -1 });
+    console.log("listing>>>",listings)
 
     if (listings.length === 0) {
       return errorHandler(res, 404, "No Listings Found", {

@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { FaSearch, FaBars, FaTimes } from "react-icons/fa";
 import { useSelector } from "react-redux";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-// Removed 'logo' import as we are using a placeholder icon/text
+import { FaSearch, FaBars, FaTimes, FaBell } from "react-icons/fa";
 
 // Define navigation links for cleaner rendering
 const navLinks = [
@@ -13,12 +12,16 @@ const navLinks = [
 
 const Header = () => {
   const [searchQuery, setSearchQuery] = useState("");
+  const [notifications, setNotifications] = useState([
+    // Example dummy data (later you can replace this with real data from backend)
+    { id: 1, message: "New message from Agent John", isRead: false },
+    { id: 2, message: "Your property was approved", isRead: false },
+  ]);
+  const [showNotifications, setShowNotifications] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  // Removed isScrolled state
 
   const navigate = useNavigate();
   const location = useLocation();
-  // Using a dummy currentUser structure since Redux state isn't available here
   const { currentUser } = useSelector((state) => state.user) || {
     currentUser: null,
   };
@@ -47,28 +50,41 @@ const Header = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
   };
 
+  const toggleNotifications = () => {
+    setShowNotifications((prev) => !prev);
+  };
 
   // Header is now fixed to the desired color
-  const headerClasses = `fixed top-0 left-0 w-full z-50 transition-all duration-300 h-20 bg-[#1F4B43] shadow-lg`; 
+  const headerClasses = `fixed top-0 left-0 w-full z-50 transition-all duration-300 h-20 bg-[#1F4B43] shadow-lg`;
 
   // Search form is fixed to a transparent/light style that works on the dark green
   const searchFormClasses = `hidden sm:flex px-3 py-2 rounded-full items-center border border-white/30 transition-all duration-200 focus-within:ring-2 focus-within:ring-yellow-400 max-w-xs bg-white/10`;
 
   // Note: The input text color needs to be white to be visible on the dark searchFormClasses background.
-  
+
   return (
     <header className={headerClasses}>
       <div className="flex justify-between items-center max-w-7xl mx-auto px-4 py-3 h-full">
-        
         {/* Logo - Skyline with white color and yellow accent icon */}
         <Link to="/" className="flex items-center">
           <div className="text-white text-2xl font-extrabold tracking-wider">
             <span className="flex items-center">
-                {/* Skyline Icon Placeholder */}
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7 mr-2 text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 20h6M9 10h6" />
-                </svg>
-                <span className="text-white">Skyline</span>
+              {/* Skyline Icon Placeholder */}
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-7 w-7 mr-2 text-yellow-400"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 20h6M9 10h6"
+                />
+              </svg>
+              <span className="text-white">Skyline</span>
             </span>
           </div>
         </Link>
@@ -96,21 +112,71 @@ const Header = () => {
         {/* Desktop Navigation */}
         <nav className="hidden sm:flex items-center gap-8 text-white font-medium tracking-wide">
           {navLinks.map((link) => (
-            <Link 
-              key={link.name} 
-              to={link.path} 
+            <Link
+              key={link.name}
+              to={link.path}
               className={`hover:${ACCENT_COLOR_HOVER} transition duration-150`}
             >
               {link.name}
             </Link>
           ))}
-          
+
           {/* Sign Up Link (only if not logged in) */}
           {!currentUser && (
-            <Link to="/sign-up" className={`hover:${ACCENT_COLOR_HOVER} transition duration-150`}>
+            <Link
+              to="/sign-up"
+              className={`hover:${ACCENT_COLOR_HOVER} transition duration-150`}
+            >
               Sign Up
             </Link>
           )}
+
+          {/* Notification Bell */}
+          <div className="relative">
+            <button
+              onClick={toggleNotifications}
+              className="relative text-white hover:text-yellow-400 focus:outline-none"
+            >
+              <FaBell size={22} />
+              {/* Red badge */}
+              {notifications.some((n) => !n.isRead) && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-xs rounded-full w-4 h-4 flex items-center justify-center">
+                  {notifications.filter((n) => !n.isRead).length}
+                </span>
+              )}
+            </button>
+
+            {/* Notification Dropdown */}
+            {showNotifications && (
+              <div className="absolute right-0 mt-1 w-64 bg-white text-gray-500 rounded-xl shadow-lg overflow-hidden z-50">
+                {notifications.length > 0 ? (
+                  <ul className="max-h-60 overflow-y-auto">
+                    {notifications.map((notif) => (
+                      <li
+                        key={notif.id}
+                        className={`px-4 py-2 text-xs ${
+                          notif.isRead ? "bg-gray-100" : "bg-yellow-50"
+                        } hover:bg-yellow-100 cursor-pointer border-b`}
+                        onClick={() =>
+                          setNotifications((prev) =>
+                            prev.map((n) =>
+                              n.id === notif.id ? { ...n, isRead: true } : n
+                            )
+                          )
+                        }
+                      >
+                        {notif.message}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="px-4 py-3 text-gray-600 text-sm text-center">
+                    No notifications yet.
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
 
           {/* Profile/Sign In Link */}
           <Link to="/dashboard" className="flex items-center">
@@ -145,8 +211,8 @@ const Header = () => {
 
       {/* Mobile Navigation */}
       {isMobileMenuOpen && (
-        <nav 
-          id="mobile-nav" 
+        <nav
+          id="mobile-nav"
           // Mobile menu background is set to the same fixed color
           className={`sm:hidden bg-[#1F4B43] border-t border-green-800 absolute w-full top-20`}
         >
@@ -164,7 +230,11 @@ const Header = () => {
               aria-label="Search property listings"
             />
             {/* Search button uses the accent color */}
-            <button type="submit" className="bg-yellow-500 text-green-900 font-bold p-3 rounded-r-md" aria-label="Submit Search">
+            <button
+              type="submit"
+              className="bg-yellow-500 text-green-900 font-bold p-3 rounded-r-md"
+              aria-label="Submit Search"
+            >
               <FaSearch />
             </button>
           </form>
@@ -172,9 +242,9 @@ const Header = () => {
           <ul className="flex flex-col items-center space-y-4 py-4 font-medium text-white">
             {navLinks.map((link) => (
               <li key={link.name}>
-                <Link 
-                  to={link.path} 
-                  onClick={toggleMobileMenu} 
+                <Link
+                  to={link.path}
+                  onClick={toggleMobileMenu}
                   className={`block w-full text-center py-1 hover:${ACCENT_COLOR_HOVER}`}
                 >
                   {link.name}
@@ -185,7 +255,11 @@ const Header = () => {
             {/* Sign Up Link (only if not logged in) */}
             {!currentUser && (
               <li>
-                <Link to="/sign-up" onClick={toggleMobileMenu} className={`block w-full text-center py-1 hover:${ACCENT_COLOR_HOVER}`}>
+                <Link
+                  to="/sign-up"
+                  onClick={toggleMobileMenu}
+                  className={`block w-full text-center py-1 hover:${ACCENT_COLOR_HOVER}`}
+                >
                   Sign Up
                 </Link>
               </li>

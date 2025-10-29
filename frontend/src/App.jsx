@@ -15,6 +15,9 @@ import ResetPassword from "./Pages/ResetPassword";
 import ContactUs from "./Pages/Contact";
 import DashboardLayout from "./Components/DashboardLayout";
 import Combineddashboard from "./Pages/Dashboard/Combineddashboard";
+import MyListings from "./Pages/MyListings";
+import Messages from "./Pages/Messages"
+import PropertyList from "./Pages/PropertyList ";
 
 const App = () => {
   return (
@@ -40,6 +43,9 @@ const App = () => {
               <Route path="/profile" element={<Profile />} />
               <Route path="/create-listing" element={<CreateListing />} />
               <Route path="/listing/:id" element={<ListingDetails />} />
+              <Route path="my-listings" element={<MyListings />} />
+              <Route path="/messages" element={<Messages/>} />
+              <Route path="/saved-properties" element={<PropertyList />} />
             </Route>
           </Route>
         </Routes>

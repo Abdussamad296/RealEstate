@@ -21,7 +21,7 @@ const Sidebar = () => {
     { name: "Create Listing", icon: <FaPlusCircle />, path: "/create-listing" },
     { name: "My Listings", icon: <FaThList />, path: "/my-listings" },
     { name: "Messages", icon: <FaEnvelope />, path: "/messages" },
-    { name: "Saved Properties", icon: <FaHeart />, path: "/saved" },
+    { name: "Saved Properties", icon: <FaHeart />, path: "/saved-properties" },
     { name: "Profile", icon: <FaUser />, path: "/profile" },
     { name: "Logout", icon: <FaSignOutAlt />, path: "/sign-in" },
   ];
