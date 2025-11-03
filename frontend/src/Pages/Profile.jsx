@@ -176,22 +176,22 @@ const Profile = () => {
                 </span>
               )}
 
-              <p className="text-xs text-gray-400 dark:text-gray-500 mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-4 border-t border-gray-200 dark:border-gray-700">
                 Member since{" "}
                 {new Date(currentUser.createdAt).toLocaleDateString()}
               </p>
-              <div className="flex justify-around gap-4 mt-6 border-t pt-4 border-gray-100 dark:border-gray-700">
+              <div className="flex flex-col justify-around gap-4 mt-6 border-t pt-4 border-gray-100 dark:border-gray-700">
                 <button
-                  className="dark:text-red-400 cursor-pointer text-sm font-medium transition-colors duration-200 bg-red-600 text-white py-1 px-4 rounded-full shadow-md"
+                  className="dark:text-red-400 cursor-pointer text-sm font-medium transition-colors duration-200 bg-red-600 text-white py-2 px-4 rounded-full shadow-md"
                   onClick={handleDeleteAccount}
                 >
                   Delete Account
                 </button>
                 <button
-                  className="cursor-pointer text-sm font-medium transition-colors duration-200 bg-blue-600 hover:bg-blue-700 text-white py-1 px-4 rounded-full shadow-md"
+                  className="cursor-pointer text-sm font-medium transition-colors duration-200 bg-blue-600 hover:bg-blue-700 text-white py-2  px-4 rounded-full shadow-md"
                   onClick={handleSignout}
                 >
-                  Sign Out
+                  Logout
                 </button>
               </div>
             </div>
