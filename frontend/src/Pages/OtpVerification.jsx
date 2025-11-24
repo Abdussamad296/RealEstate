@@ -13,7 +13,6 @@ import {
 const OtpVerification = () => {
   const { state } = useLocation();
   const { email, loading, error } = useSelector((state) => state.user);
-  console.log("Email from Redux:", email);
   const [formData, setFormData] = useState({
     otp: "",
     email: email || "", // Use email from Redux

@@ -3,6 +3,7 @@ import { errorHandler } from '../utils/error.js';  // Reuse your error handler
 
 export const verifyToken = (req, res, next) => {
   const token = req.cookies.token;
+  console.log("token>>>>>>>>>>>>>",token)
   if (!token) {
     return errorHandler(res, 401, 'Unauthorized', { msg: 'No token provided' });
   }

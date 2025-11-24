@@ -13,3 +13,15 @@ export const getDashboardData = async () => {
     throw err;
   }
 };
+
+export const getMonthlyStats = async () => {
+    try {
+        const response = await axios.get(`${API_BASE_URL}/dashboard/monthly-state`, {
+        withCredentials: true,
+        });
+        return response.data;
+    } catch (err) {
+        console.error("Error in getMonthlyStats:", err);
+        throw err;
+    }
+}

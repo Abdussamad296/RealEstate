@@ -24,3 +24,18 @@ import { errorHandler } from "../utils/error.js";
   }
 };
 
+export const getAllUsers = async(req,res) => {
+  try{
+    const users = await User.find().select("_id username").lean();
+    res.status(200).json({
+      success : true,
+      message : "Users fetched successfully",
+      data : users
+    })
+  }catch(err){
+    return errorHandler(res, 500, "Internal Server Error", {
+      msg: err.message,
+    });
+  }
+}
+

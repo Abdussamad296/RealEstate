@@ -5,28 +5,28 @@ import TileGraph from "./TileGraph";
 import PieChartComponent from "./PieChartComponent.jsx";
 import PropertyCard from "./PropertyCards.jsx";
 import RecentActivity from "./RecentActivity.jsx";
-import { getDashboardData } from "../../Service/dashboard.service.js";
+import {
+  getDashboardData,
+  getMonthlyStats,
+} from "../../Service/dashboard.service.js";
+import { getRecentListings } from "../../Service/list.service.js";
+
+const BACKEND_URL = "http://localhost:3000";
+
 const Combineddashboard = () => {
   // Static listings data
 
   const tabsData = ["All", "Rent", "Sale"];
-
-  const listings = [
-    { type: "rent", offer: true },
-    { type: "sale", offer: false },
-    { type: "rent", offer: false },
-    { type: "sale", offer: true },
-    { type: "sale", offer: true },
-    { type: "rent", offer: true },
-    { type: "sale", offer: false },
-  ];
-
+  const [selectedTab, setSelectedTab] = useState("All");
   const [dashboardData, setDashboardData] = useState({
     totalProperties: 0,
     totalSellingProperties: 0,
     totalRentingProperties: 0,
     offerListings: 0,
   });
+  const [monthlyStats, setMonthlyStats] = useState([]);
+  const [recentListings, setRecentListings] = useState([]);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -40,6 +40,19 @@ const Combineddashboard = () => {
     fetchDashboardData();
   }, []);
 
+  useEffect(() => {
+    const fetchMonthlyStats = async () => {
+      try {
+        const response = await getMonthlyStats();
+        console.log("montly state>>>>>", response.data);
+        setMonthlyStats(response.data);
+      } catch (error) {
+        console.error("Error fetching monthly stats:", error);
+      }
+    };
+    fetchMonthlyStats();
+  }, []);
+
   const {
     totalProperties,
     totalSellingProperties,
@@ -47,64 +60,31 @@ const Combineddashboard = () => {
     offerListings,
   } = dashboardData;
 
-  // Dummy data for property cards
-  const propertyData = [
-    {
-      _id: { $oid: "68cd585127a987f069c05d5d" },
-      name: "Sunny 2-Bedroom Condo",
-      address: "123 Urban Blvd, Metropolis, CA 90210",
-      price: 20000,
-      bedrooms: 2,
-      bathrooms: 2,
-      type: "rent",
-      image:
-        "https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1500&q=80",
-    },
-    {
-      _id: { $oid: "68cd585127a987f069c05d5e" },
-      name: "Cozy 3-Bedroom House with Large Yard",
-      address: "456 Rural Rd, Suburbia, CA 90211",
-      price: 350000,
-      bedrooms: 3,
-      bathrooms: 2,
-      type: "sale",
-      image:
-        "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1500&q=80",
-    },
-    {
-      _id: { $oid: "68cd585127a987f069c05d5f" },
-      name: "Modern 1-Bedroom Apartment near Transit",
-      address: "789 City Ave, Downtown, CA 90212",
-      price: 1500,
-      bedrooms: 1,
-      bathrooms: 1,
-      type: "rent",
-      image:
-        "https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1500&q=80",
-    },
-    {
-      _id: { $oid: "68cd585127a987f069c05d5d" },
-      name: "Sunny 2-Bedroom Condo",
-      address: "123 Urban Blvd, Metropolis, CA 90210",
-      price: 20000,
-      bedrooms: 2,
-      bathrooms: 2,
-      type: "rent",
-      image:
-        "https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1500&q=80",
-    },
-    {
-      _id: { $oid: "68cd585127a987f069c05d5e" },
-      name: "Cozy 3-Bedroom House with Large Yard",
-      address: "456 Rural Rd, Suburbia, CA 90211",
-      price: 350000,
-      bedrooms: 3,
-      bathrooms: 2,
-      type: "sale",
-      image:
-        "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1500&q=80",
-    },
-  ];
+  useEffect(() => {
+    const fetchListings = async () => {
+      setLoading(true);
+      try {
+        const response = await getRecentListings();
+        console.log("response><><><<>", response.data);
+        setRecentListings(response.data || []);
+      } catch (err) {
+        console.error("Error fetching recent listings:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchListings();
+  }, []);
+
+  const filteredProperties = useMemo(() => {
+    if (selectedTab === "All") {
+      return recentListings;
+    }
+    return recentListings.filter(
+      (property) =>
+        property.type.toLowerCase() === selectedTab.toLocaleLowerCase()
+    );
+  }, [selectedTab, recentListings]);
 
   const [selectedTile, setSelectedTile] = useState("total");
 
@@ -153,23 +133,17 @@ const Combineddashboard = () => {
   );
 
   // Graph data
-  const graphData = useMemo(
-    () => ({
-      total: [{ name: "Total Properties", value: totalProperties }],
-      sale: [{ name: "Properties For Sale", value: totalSellingProperties }],
-      rent: [{ name: "Properties For Rent", value: totalRentingProperties }],
-      offer: [
-        { name: "Listings on Offer", value: offerListings },
-        { name: "Regular", value: totalProperties - offerListings },
-      ],
-    }),
-    [
-      totalProperties,
-      totalSellingProperties,
-      totalRentingProperties,
-      offerListings,
-    ]
-  );
+  const graphData = useMemo(() => {
+    if (!monthlyStats || monthlyStats.length === 0) return [];
+
+    return monthlyStats.map((stat) => ({
+      name: stat.month,
+      total: stat.total,
+      sale: stat.sale,
+      rent: stat.rent,
+      offer: stat.offer,
+    }));
+  }, [monthlyStats]);
 
   // Pie chart data (using colors that match the tiles for consistency)
   const pieDataType = useMemo(
@@ -206,13 +180,6 @@ const Combineddashboard = () => {
   const currentBarColors =
     selectedTile === "rent" ? RENT_BAR_COLORS : undefined;
 
-  const graphTitle =
-    selectedTile === "rent"
-      ? "Properties For Rent"
-      : tiles.find((t) => t.id === selectedTile)?.title ||
-        "Property Distribution";
-  // ---------------------------
-
   return (
     <div className="p-4 sm:p-6 min-h-screen pt-16 bg-gray-100 mt-10">
       <h1 className="text-3xl font-extrabold mb-10 text-[#1F4B43] text-center">
@@ -246,9 +213,9 @@ const Combineddashboard = () => {
       {selectedTile && (
         <div className="mt-10">
           <TileGraph
-            title={graphTitle}
-            dataKey="value"
-            data={graphData[selectedTile]}
+            title="Monthly Property Trends"
+            dataKey={selectedTile} // use dynamic key: total, sale, rent, offer
+            data={graphData}
             barColors={currentBarColors}
           />
         </div>
@@ -268,22 +235,34 @@ const Combineddashboard = () => {
         </div>
 
         <div className="bg-white p-8 rounded-3xl shadow-2xl w-full h-full">
-          <h2 className="text-2xl font-extrabold mb-6 text-[#1F4B43] tracking-tight text-center">
+          <h2 className="text-2xl font-extrabold mb-3 text-[#1F4B43] tracking-tight text-center">
             View Recently Added Properties
           </h2>
-          {tabsData.map((tab) => (
-            <button
-              key={tab}
-              className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800 focus:outline-none cursor-pointer"
-              // onClick={() => handleTabClick(tab)}
-            >
-              {tab}
-            </button>
-          ))}
-          <div className="space-y-4">
-            {propertyData.map((property) => (
-              <RecentActivity key={property._id.$oid} property={property} />
+          <div className="flex justify-center space-x-4 mb-6">
+            {tabsData.map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setSelectedTab(tab)}
+                className={`px-6 py-2 rounded-full font-medium text-sm transition-all duration-200  cursor-pointer ${
+                  selectedTab === tab
+                    ? "bg-[#1F4B43] text-white shadow-md scale-105"
+                    : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                }`}
+              >
+                {tab}
+              </button>
             ))}
+          </div>
+          <div className="space-y-4">
+            {filteredProperties.length > 0 ? (
+              filteredProperties.map((property) => (
+                <RecentActivity key={property._id.$oid} property={property} />
+              ))
+            ) : (
+              <p className="text-center text-gray-500">
+                No properties found for the selected category.
+              </p>
+            )}
           </div>
         </div>
       </div>
@@ -294,7 +273,7 @@ const Combineddashboard = () => {
           Featured Property Listings
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-          {propertyData.map((property) => (
+          {recentListings.map((property) => (
             <PropertyCard key={property._id.$oid} property={property} />
           ))}
         </div>

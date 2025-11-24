@@ -140,7 +140,6 @@ const CreateListing = () => {
       setExistingImages([]);
       setIsEditing(false);
       setCurrentId(null);
-      console.log("Success:", response);
       navigate("/my-listings"); // Redirect to MyListings after success
     } catch (error) {
       const errorMsg =

@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { getRecentListings } from "../Service/list.service";
-import { Link } from "react-router-dom";
 import homeImage from "../assets/Real_estate_Home_img.jpg";
 import { FaArrowRightLong, FaLocationDot } from "react-icons/fa6";
 import { FaBath, FaDollarSign } from "react-icons/fa";
@@ -11,6 +10,8 @@ import DiscoverOurBestProperties from "./homepage/DiscoverOurBestProperties";
 import PerfectHome from "./homepage/PerfectHome";
 import ReviewProperties from "./homepage/ReviewProperties";
 import Footer from "./homepage/Footer";
+import axios from "axios";
+import { useLocation, useNavigate } from "react-router-dom";
 
 const BACKEND_URL = "http://localhost:3000";
 
@@ -23,6 +24,11 @@ const HomePage = () => {
   const [activeFilter, setActiveFilter] = useState("All Properties");
 
   const filterData = ["All Properties", "Rent", "Sale"];
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const searchRef = useRef(null);
+  const featuredRef = useRef(null);
 
   useEffect(() => {
     const fetchListings = async () => {
@@ -40,23 +46,60 @@ const HomePage = () => {
     fetchListings();
   }, []);
 
+  useEffect(() => {
+    const urlParams = new URLSearchParams(location.search);
+    const q = urlParams.get("q") || "";
+    const type = urlParams.get("type") || "all";
+
+    setSearchQuery(q);
+    setSearchType(type);
+    if (q) {
+      const delayDebounce = setTimeout(() => {
+        fetchSearchResults(q, type);
+      }, 600);
+      return () => clearTimeout(delayDebounce);
+    }
+  }, [location.search]);
+
   const handleSearch = (e) => {
     e.preventDefault();
-    // Implement search functionality (e.g., filter listings or make a new API call)
-    console.log("Search:", { searchQuery, searchType });
-    // You can extend this to filter listings or call a search API
+    if (!searchQuery.trim()) return;
+    const params = new URLSearchParams();
+    params.set("q", searchQuery);
+    if (searchType !== "all") {
+      params.set("type", searchType);
+    }
+    navigate(`/?${params.toString()}`);
   };
 
-  const handleFilterChange = (filter) => {
-    setActiveFilter(filter);
-    // Implement filtering functionality based on the selected filter
-    console.log("Filter changed to:", filter);
+  const fetchSearchResults = async (query, type = "all") => {
+    setLoading(true);
+    try {
+      let url = `http://localhost:3000/api/home/search?q=${query}`;
+      if (type !== "all") url += `&type=${type}`;
+      const response = await axios.get(url);
+      setListings(response.data || []);
+    } catch (err) {
+      setError("Failed to fetch search results.");
+    } finally {
+      setLoading(false);
+    }
   };
+
+  const filteredListings =
+    activeFilter === "All Properties"
+      ? listings
+      : listings.filter(
+          (listing) => listing.type.toLowerCase() === activeFilter.toLowerCase()
+        );
 
   return (
     <div className="font-sans bg-gray-100">
       {/* Hero Section */}
-      <section className="relative bg-cover bg-center h-screen text-white flex items-center justify-center ">
+      <section
+        ref={searchRef}
+        className="relative bg-cover bg-center h-screen text-white flex items-center justify-center "
+      >
         <img
           src={homeImage}
           alt="Beautiful house"
@@ -102,7 +145,10 @@ const HomePage = () => {
       </section>
 
       {/* Featured Listings Section */}
-      <section className="py-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section
+        className="py-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"
+        ref={featuredRef}
+      >
         <h2 className="text-3xl font-semibold text-gray-900 mb-2 text-center">
           Featured Properties 🏡
         </h2>
@@ -115,7 +161,12 @@ const HomePage = () => {
           {filterData.map((item) => (
             <button
               key={item}
-              className="mx-2 px-4 py-2 bg-green-900 text-white rounded-full transition duration-200 cursor-pointer border border-gray-600 hover:bg-green-950 focus:outline-none"
+              onClick={() => setActiveFilter(item)}
+              className={`mx-2 px-4 py-2 rounded-full transition duration-200 cursor-pointer border border-gray-600 ${
+                activeFilter === item
+                  ? "bg-green-950 text-white"
+                  : "bg-green-900 text-gray-200 hover:bg-green-950"
+              }`}
             >
               {item}
             </button>
@@ -128,9 +179,9 @@ const HomePage = () => {
           </p>
         ) : error ? (
           <p className="text-center text-red-500 font-medium">{error}</p>
-        ) : listings.length > 0 ? (
+        ) : filteredListings.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {listings.map((listing) => (
+            {filteredListings.map((listing) => (
               <div
                 key={listing._id}
                 className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden transform hover:-translate-y-1"
@@ -293,12 +344,12 @@ const HomePage = () => {
 
       <DiscoverOurBestProperties />
 
-      <PerfectHome/>
+      <PerfectHome searchRef={searchRef} featuredRef={featuredRef} />
 
-      <ReviewProperties/>
+      <ReviewProperties />
 
       {/* CTA Section */}
-      <Footer/>
+      <Footer />
     </div>
   );
 };

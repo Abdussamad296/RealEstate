@@ -1,12 +1,14 @@
 // src/components/PropertyCard.jsx (or similar path)
 import React from 'react';
 import { FaBed, FaBath, FaMapMarkerAlt } from 'react-icons/fa';
+const BACKEND_URL = "http://localhost:3000";
 
 const PropertyCard = ({ property }) => {
-  const { name, address, price, bedrooms, bathrooms, type, image } = property;
+  const { name, address, regularPrice, bedrooms, bathrooms, type } = property;
+  const image = `${BACKEND_URL}${property.images[0]}`;
 
   // Function to format price (e.g., $20,000)
-  const formattedPrice = `$${price.toLocaleString()}`;
+  const formattedPrice = `$${regularPrice.toLocaleString()}`;
 
   // Determine tag color based on type
   const typeTagColor = type === 'rent' ? 'bg-indigo-500' : 'bg-teal-500';

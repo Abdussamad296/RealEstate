@@ -1,7 +1,16 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useSelector } from "react-redux";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { FaSearch, FaBars, FaTimes, FaBell } from "react-icons/fa";
+import {
+  FaSearch,
+  FaBars,
+  FaTimes,
+  FaBell,
+  FaCheck,
+  FaCheckDouble,
+} from "react-icons/fa";
+import { io as ClientIO } from "socket.io-client";
+import axios from "axios";
 
 // Define navigation links for cleaner rendering
 const navLinks = [
@@ -10,24 +19,132 @@ const navLinks = [
   { name: "Contact", path: "/contact" },
 ];
 
+const SOCKET_SERVER_URL =
+  import.meta.env.VITE_SOCKET_SERVER_URL || "http://localhost:3000";
+
 const Header = () => {
   const [searchQuery, setSearchQuery] = useState("");
-  const [notifications, setNotifications] = useState([
-    // Example dummy data (later you can replace this with real data from backend)
-    { id: 1, message: "New message from Agent John", isRead: false },
-    { id: 2, message: "Your property was approved", isRead: false },
-  ]);
+  const [notifications, setNotifications] = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-
+  const [socket, setSocket] = useState(null);
   const navigate = useNavigate();
   const location = useLocation();
   const { currentUser } = useSelector((state) => state.user) || {
     currentUser: null,
   };
+  const [showAll, setShowAll] = useState(false);
+  const [page, setPage] = useState(1);
 
-  const ACCENT_COLOR_HOVER = "text-yellow-400"; // Gold/Yellow for hover/highlight
-  const SIGN_IN_COLOR = "text-yellow-500"; // Prominent color for Sign In text
+  useEffect(() => {
+    if (!currentUser) return;
+
+    const newSocket = ClientIO(SOCKET_SERVER_URL, {
+      transports: ["websocket"],
+      withCredentials: true,
+    });
+    setSocket(newSocket);
+
+    newSocket.on("connect", () => {
+      console.log("Connected to socket", newSocket.id);
+      // register userId with server so server knows which socket to emit to
+      newSocket.emit("registerUser", currentUser._id);
+    });
+
+    newSocket.on("disconnect", () => console.log("Socket Disconnnected"));
+
+    newSocket.on("newNotification", (notification) => {
+      setNotifications((prev) => [notification, ...prev]);
+    });
+    return () => {
+      newSocket.disconnect();
+    };
+  }, [currentUser]);
+
+  const timeAgo = (date) => {
+    const seconds = Math.floor((new Date() - new Date(date)) / 1000);
+    const intervals = {
+      year: 31536000,
+      month: 2592000,
+      week: 604800,
+      day: 86400,
+      hour: 3600,
+      minute: 60,
+    };
+
+    for (const key in intervals) {
+      const value = Math.floor(seconds / intervals[key]);
+      if (value >= 1) return `${value} ${key}${value > 1 ? "s" : ""} ago`;
+    }
+    return "just now";
+  };
+
+  const fetchDropdownNotifications = async () => {
+    try {
+      const res = await axios.get(
+        "http://localhost:3000/api/notifications/get-notifications",
+        { withCredentials: true }
+      );
+      setNotifications(res.data.notifications);
+      setShowAll(false);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const fetchAllNotifications = async () => {
+    try {
+      const res = await axios.get(
+        `http://localhost:3000/api/notifications/all-notifications?page=${page}&limit=10`,
+        { withCredentials: true }
+      );
+
+      setNotifications(res.data.notifications);
+      setShowAll(true);
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
+  const markRead = async (id) => {
+    try {
+      await axios.put(
+        `http://localhost:3000/api/notifications/mark-as-read/${id}`,
+        {},
+        { withCredentials: true }
+      );
+
+      setNotifications((prev) =>
+        prev.map((n) => (n._id === id ? { ...n, isRead: true } : n))
+      );
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
+  const markAllRead = async () => {
+    try {
+      await axios.put(
+        "http://localhost:3000/api/notifications/read-all-notifications",
+        {},
+        { withCredentials: true }
+      );
+
+      setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
+  useEffect(() => {
+    fetchDropdownNotifications();
+  }, [currentUser]);
+
+  useEffect(() => {
+    if (showAll) {
+      fetchAllNotifications();
+    }
+  }, [showAll, page]);
 
   // Effect to handle search query from URL
   useEffect(() => {
@@ -40,9 +157,8 @@ const Header = () => {
     e.preventDefault();
     const trimmedQuery = searchQuery.trim();
     if (trimmedQuery) {
-      const urlParams = new URLSearchParams(location.search);
-      urlParams.set("q", encodeURIComponent(trimmedQuery));
-      navigate(`/search?${urlParams.toString()}`, { replace: true });
+      navigate(`/?q=${encodeURIComponent(trimmedQuery)}`);
+      setIsMobileMenuOpen(false);
     }
   };
 
@@ -54,13 +170,13 @@ const Header = () => {
     setShowNotifications((prev) => !prev);
   };
 
+  const unreadCount = notifications.filter((n) => !n.isRead).length;
+
   // Header is now fixed to the desired color
   const headerClasses = `fixed top-0 left-0 w-full z-50 transition-all duration-300 h-20 bg-[#1F4B43] shadow-lg`;
 
   // Search form is fixed to a transparent/light style that works on the dark green
   const searchFormClasses = `hidden sm:flex px-3 py-2 rounded-full items-center border border-white/30 transition-all duration-200 focus-within:ring-2 focus-within:ring-yellow-400 max-w-xs bg-white/10`;
-
-  // Note: The input text color needs to be white to be visible on the dark searchFormClasses background.
 
   return (
     <header className={headerClasses}>
@@ -115,7 +231,7 @@ const Header = () => {
             <Link
               key={link.name}
               to={link.path}
-              className={`hover:${ACCENT_COLOR_HOVER} transition duration-150`}
+              className={`hover:text-yellow-400 transition duration-150`}
             >
               {link.name}
             </Link>
@@ -125,7 +241,7 @@ const Header = () => {
           {!currentUser && (
             <Link
               to="/sign-up"
-              className={`hover:${ACCENT_COLOR_HOVER} transition duration-150`}
+              className={`hover:text-yellow-400 transition duration-150`}
             >
               Sign Up
             </Link>
@@ -135,44 +251,134 @@ const Header = () => {
           <div className="relative">
             <button
               onClick={toggleNotifications}
-              className="relative text-white hover:text-yellow-400 focus:outline-none"
+              className="notification-bell relative text-white hover:text-yellow-400 focus:outline-none transition-colors"
             >
               <FaBell size={22} />
-              {/* Red badge */}
-              {notifications.some((n) => !n.isRead) && (
-                <span className="absolute -top-1 -right-1 bg-red-500 text-xs rounded-full w-4 h-4 flex items-center justify-center">
-                  {notifications.filter((n) => !n.isRead).length}
+              {/* Red badge with animation */}
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-semibold animate-pulse">
+                  {unreadCount > 9 ? "9+" : unreadCount}
                 </span>
               )}
             </button>
 
-            {/* Notification Dropdown */}
+            {/* Modern Notification Dropdown */}
             {showNotifications && (
-              <div className="absolute right-0 mt-1 w-64 bg-white text-gray-500 rounded-xl shadow-lg overflow-hidden z-50">
+              <div className="absolute right-0 mt-3 w-96 bg-white rounded-2xl shadow-2xl z-50 overflow-hidden border border-gray-100">
+                {/* Header with gradient */}
+                <div className="bg-gradient-to-r from-[#1F4B43] to-[#2d6b5f] p-2.5">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h2 className="text-lg font-bold text-white">
+                        Notifications
+                      </h2>
+                      {unreadCount > 0 && (
+                        <p className="text-xs text-yellow-300 mt-0.5">
+                          {unreadCount} unread{" "}
+                          {unreadCount === 1 ? "notification" : "notifications"}
+                        </p>
+                      )}
+                    </div>
+                    <button
+                      onClick={markAllRead}
+                      disabled={unreadCount === 0}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                        unreadCount > 0
+                          ? "bg-yellow-400 text-[#1F4B43] hover:bg-yellow-300 shadow-md"
+                          : "bg-gray-400 text-gray-200 cursor-not-allowed"
+                      }`}
+                      title="Mark all as read"
+                    >
+                      <FaCheckDouble size={12} />
+                      Mark All Read
+                    </button>
+                  </div>
+                </div>
+
+                {/* Notifications List */}
                 {notifications.length > 0 ? (
-                  <ul className="max-h-60 overflow-y-auto">
-                    {notifications.map((notif) => (
-                      <li
-                        key={notif.id}
-                        className={`px-4 py-2 text-xs ${
-                          notif.isRead ? "bg-gray-100" : "bg-yellow-50"
-                        } hover:bg-yellow-100 cursor-pointer border-b`}
-                        onClick={() =>
-                          setNotifications((prev) =>
-                            prev.map((n) =>
-                              n.id === notif.id ? { ...n, isRead: true } : n
-                            )
-                          )
-                        }
+                  <div
+                    className={`overflow-y-auto custom-scrollbar transition-all duration-300 ${
+                      showAll ? "max-h-[400px]" : "max-h-80"
+                    }`}
+                  >
+                    {notifications.map((notif, index) => (
+                      <div
+                        key={notif._id}
+                        className={`group relative p-3 border-b border-gray-100 cursor-pointer transition-all duration-200
+    ${
+      !notif.isRead
+        ? "bg-blue-50 hover:bg-blue-100"
+        : "bg-white hover:bg-gray-50"
+    }
+    ${index === notifications.length - 1 ? "border-b-0" : ""}
+  `}
+                        onClick={() => markRead(notif._id)}
                       >
-                        {notif.message}
-                      </li>
+                        <div className="flex items-start gap-3">
+                          {/* Avatar */}
+                          <img
+                            src={
+                              notif.sender?.img ||
+                              "https://upload.wikimedia.org/wikipedia/commons/9/99/Sample_User_Icon.png"
+                            }
+                            className="w-10 h-10 rounded-full object-cover"
+                            alt="sender"
+                          />
+
+                          <div className="flex-1">
+                            {/* Body Text */}
+                            <p className="text-sm text-gray-800 leading-snug">
+                              {notif.body}
+                            </p>
+
+                            {/* Time + Unread Dot */}
+                            <div className="flex items-center justify-between mt-1">
+                              <span className="text-[11px] text-gray-500">
+                                {timeAgo(notif.createdAt)}
+                              </span>
+
+                              {!notif.isRead && (
+                                <span className="ml-2 bg-blue-500 w-2 h-2 rounded-full animate-pulse"></span>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Read check icon */}
+                          {notif.isRead && (
+                            <FaCheck className="text-green-500 text-xs mt-1" />
+                          )}
+                        </div>
+
+                        {/* Hover animation border */}
+                        <div className="absolute bottom-0 left-0 w-full h-0.5 bg-gradient-to-r from-yellow-400 to-[#1F4B43] scale-x-0 group-hover:scale-x-100 transition-transform duration-300"></div>
+                      </div>
                     ))}
-                  </ul>
+                  </div>
                 ) : (
-                  <p className="px-4 py-3 text-gray-600 text-sm text-center">
-                    No notifications yet.
-                  </p>
+                  <div className="py-12 px-4 text-center">
+                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                      <FaBell className="text-gray-400 text-2xl" />
+                    </div>
+                    <p className="text-gray-500 text-sm font-medium">
+                      No notifications yet
+                    </p>
+                    <p className="text-gray-400 text-xs mt-1">
+                      We'll notify you when something arrives
+                    </p>
+                  </div>
+                )}
+
+                {/* Footer */}
+                {notifications.length > 0 && (
+                  <div className="bg-gray-50 p-3 border-t border-gray-100">
+                    <button
+                      onClick={() => setShowAll(true)}
+                      className="block w-full text-center text-[#1F4B43] hover:text-[#2d6b5f] text-sm font-semibold py-1"
+                    >
+                      View All Notifications →
+                    </button>
+                  </div>
                 )}
               </div>
             )}
@@ -190,7 +396,7 @@ const Header = () => {
                 className={`w-10 h-10 rounded-full object-cover border-2 border-transparent hover:border-yellow-400 transition duration-150`}
               />
             ) : (
-              <span className={`${SIGN_IN_COLOR} font-bold hover:underline`}>
+              <span className={`text-yellow-500 font-bold hover:underline`}>
                 Sign In
               </span>
             )}
@@ -245,7 +451,7 @@ const Header = () => {
                 <Link
                   to={link.path}
                   onClick={toggleMobileMenu}
-                  className={`block w-full text-center py-1 hover:${ACCENT_COLOR_HOVER}`}
+                  className={`block w-full text-center py-1 hover:text-yellow-400`}
                 >
                   {link.name}
                 </Link>
@@ -258,7 +464,7 @@ const Header = () => {
                 <Link
                   to="/sign-up"
                   onClick={toggleMobileMenu}
-                  className={`block w-full text-center py-1 hover:${ACCENT_COLOR_HOVER}`}
+                  className={`block w-full text-center py-1 hover:text-yellow-400`}
                 >
                   Sign Up
                 </Link>
@@ -288,6 +494,23 @@ const Header = () => {
           </ul>
         </nav>
       )}
+
+      {/* Custom Scrollbar Styles */}
+      <style jsx>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: #f1f1f1;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: #cbd5e0;
+          border-radius: 3px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: #a0aec0;
+        }
+      `}</style>
     </header>
   );
 };

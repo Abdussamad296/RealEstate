@@ -21,34 +21,32 @@ const CustomTooltip = ({ active, payload }) => {
   return null;
 };
 
-const PieChartComponent = ({ title }) => {
-  const chartData = [
-    { name: "On Offer", value: 3 },
-    { name: "Regular", value: 25 },
-  ];
-  const totalValue = chartData.reduce((sum, entry) => sum + entry.value, 0);
+const PieChartComponent = ({ data, title }) => {
+  const totalValue = data.reduce((sum, entry) => sum + entry.value, 0);
 
   return (
     <div className="bg-white p-6 rounded-2xl shadow-xl w-full h-96 transition-all duration-300 hover:shadow-2xl">
-      <h3 className="text-[#1F4B43] text-xl font-bold mb-4 text-center">{title}</h3>
+      <h3 className="text-[#1F4B43] text-xl font-bold mb-4 text-center">
+        {title}
+      </h3>
       <ResponsiveContainer width="100%" height="80%">
         <PieChart>
           <Pie
-            data={chartData}
+            data={data}
             dataKey="value"
             nameKey="name"
             cx="50%"
             cy="50%"
-            innerRadius={60} // Corrected: larger inner radius for doughnut
-            outerRadius={100} // Larger outer radius for bigger doughnut
+            innerRadius={60}
+            outerRadius={100}
             fill="#1F4B43"
             animationDuration={800}
             animationEasing="ease-in-out"
           >
-            {chartData.map((entry, index) => (
+            {data.map((entry, index) => (
               <Cell
                 key={`cell-${index}`}
-                fill={COLORS[index % COLORS.length]}
+                fill={entry.color}
                 stroke="#ffffff"
                 strokeWidth={2}
               />
@@ -80,5 +78,6 @@ const PieChartComponent = ({ title }) => {
     </div>
   );
 };
+
 
 export default PieChartComponent;
