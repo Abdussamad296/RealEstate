@@ -2,6 +2,28 @@ import mongoose from "mongoose";
 
 const bookingSchema = new mongoose.Schema(
   {
+    // Buyer details
+    buyerId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+
+    // Seller details
+    agentId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+
+    // Property
+    propertyId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Listing",
+      required: true,
+    },
+
+    // Email/message
     name: {
       type: String,
       required: true,
@@ -14,21 +36,14 @@ const bookingSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+
+    // rent or sale
     action: {
       type: String,
-      enum: ["visit", "rent", "buy", "sell"],
+      enum: ["rent", "sale", "buy", "sell", "visit"],
       required: true,
     },
-    agentId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
-    },
-    propertyId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Listing",
-      default: null,
-    },
+
     status: {
       type: String,
       enum: ["pending", "approved", "rejected", "completed"],

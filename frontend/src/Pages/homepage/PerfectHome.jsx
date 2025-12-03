@@ -11,6 +11,7 @@ import leftImage from "../../assets/h21.jpg.png";
 import * as Dialog from "@radix-ui/react-dialog";
 import axios from "axios";
 import toast from "react-hot-toast";
+import { getAllUsers } from "../../Service/user.service";
 
 // Static step data
 const howItWorksSteps = [
@@ -118,9 +119,9 @@ const PerfectHome = ({ searchRef, featuredRef }) => {
   useEffect(() => {
     const fetchAgents = async () => {
       try {
-        const res = await axios.get("http://localhost:3000/api/user/get-user");
-        console.log("res", res.data.data);
-        setAgents(res.data.data || []);
+        const res = await getAllUsers();;
+        console.log("res", res.data);
+        setAgents(res.data || []);
       } catch (err) {
         console.error("Failed to load agents:", err);
       }

@@ -1,6 +1,6 @@
 import express from 'express';
 import { verifyToken } from '../middleware/verifyToken.js';
-import { createListing } from '../controller/listing.controller.js';
+import { createListing, toggleLike } from '../controller/listing.controller.js';
 import { getUserListings,updateListing,deleteListing,getRecentListings,getListingById} from '../controller/listing.controller.js';
 
 const router = express.Router();
@@ -11,5 +11,6 @@ router.put("/update-listing/:id", verifyToken, updateListing);
 router.delete("/delete-listing/:id", verifyToken, deleteListing);
 router.get("/listings/recent",verifyToken, getRecentListings);
 router.get("/listings/:id", getListingById);
+router.post("/:id/like",toggleLike);
 
 export default router;

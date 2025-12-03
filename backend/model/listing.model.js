@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 
+
 const listingSchema = new mongoose.Schema({
   name: { type: String, required: true, trim: true },
   description: { type: String, required: true, trim: true },
@@ -23,7 +24,8 @@ const listingSchema = new mongoose.Schema({
   parking: { type: Boolean, required: true, default: false },
   type: { type: String, required: true, enum: ["rent", "sale"], trim: true },
   images: { type: [String], required: true, validate: [arr => arr.length > 0, "At least one image is required"] },
-  userRef: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true }
+  userRef: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+  likes: [{ type: mongoose.Schema.Types.ObjectId, ref: "User", default: [] }],
 }, { timestamps: true });
 
 const Listing = mongoose.model("Listing", listingSchema);

@@ -1,42 +1,70 @@
 // backend/controller/booking.controller.js
+
 import Booking from "../model/booking.model.js";
-import Notification from "../model/notification.model.js";
 import { getIo } from "../socket/socket.js";
 
 export const createBooking = async (req, res) => {
   try {
-    const { name, email, message, action, agentId } = req.body;
-    if (!name || !email || !message || !action || !agentId) {
-      return res.status(400).json({ success:false, message:"All fields are required" });
+    const {
+      name,
+      email,
+      message,
+      action,
+      agentId,
+      buyerId,
+      propertyId,        // ← Now receiving this
+      listingName
+    } = req.body;
+
+    // Validate required fields
+    if (!name || !email || !message || !action || !agentId || !buyerId || !propertyId) {
+      return res.status(400).json({
+        success: false,
+        message: "All fields are required including propertyId"
+      });
     }
 
-    const booking = await Booking.create({ name, email, message, action, agentId });
-
-    const notification = await Notification.create({
-      title: `${action.toUpperCase()} Request`,
-      body: message,
-      recipient: agentId,
-      sender: { name, email },
-      booking: booking._id,
+    // Create booking
+    const booking = await Booking.create({
+      buyerId,
+      agentId,
+      propertyId,
+      name,
+      email,
+      message,
+      action,
     });
 
-    // emit realtime to agent if online
+    // Real-time notification to seller (if online)
     try {
       const io = getIo();
       const agentSocketId = global.onlineUsers.get(String(agentId));
+
       if (agentSocketId) {
-        io.to(agentSocketId).emit("newNotification", notification);
-        console.log("Realtime notification sent to agent:", agentSocketId);
-      } else {
-        console.log("Agent offline: saved notification only");
+        io.to(agentSocketId).emit("newInquiry", {
+          _id: booking._id,
+          buyerName: name,
+          buyerEmail: email,
+          listingName: listingName || "a property",
+          propertyId,
+          message: message.slice(0, 100) + (message.length > 100 ? "..." : ""),
+          action: action.charAt(0).toUpperCase() + action.slice(1),
+          timestamp: new Date().toISOString(),
+        });
+        console.log("Real-time inquiry sent to agent:", agentId);
       }
-    } catch (e) {
-      console.warn("Socket not initialized yet:", e.message);
+    } catch (socketErr) {
+      console.warn("Socket emit failed (non-critical):", socketErr.message);
     }
 
-    return res.status(201).json({ success:true, message:"Request sent", booking, notification });
+    return res.status(201).json({
+      success: true,
+      message: "Inquiry sent successfully",
+      booking
+    });
+
   } catch (err) {
-    console.error(err);
-    return res.status(500).json({ message: "Server Error" });
+    console.error("Create booking error:", err);
+    return res.status(500).json({ success: false, message: "Server Error" });
   }
 };

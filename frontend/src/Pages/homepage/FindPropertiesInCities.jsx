@@ -49,7 +49,7 @@ const FindPropertiesInCities = () => {
                 <img
                   src={city.image ? `${BACKEND_URL}${city.image}` : "https://via.placeholder.com/400x224?text=No+Image"}
                   alt={city.name}
-                  className="w-full h-60 object-cover transform group-hover:scale-110 transition duration-300"
+                  className="w-full h-50 object-cover transform group-hover:scale-110 transition duration-300"
                 />
               </div>
               <div className="p-4 flex flex-row items-center justify-between">

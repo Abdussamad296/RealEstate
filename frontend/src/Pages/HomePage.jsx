@@ -11,7 +11,11 @@ import PerfectHome from "./homepage/PerfectHome";
 import ReviewProperties from "./homepage/ReviewProperties";
 import Footer from "./homepage/Footer";
 import axios from "axios";
-import { useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import ListingDetails from "./ListingDetails";
+import { useSelector } from "react-redux";
+import toast from "react-hot-toast";
+import { likeHandle } from "../Service/like.service";
 
 const BACKEND_URL = "http://localhost:3000";
 
@@ -29,6 +33,7 @@ const HomePage = () => {
 
   const searchRef = useRef(null);
   const featuredRef = useRef(null);
+  const {currentUser} = useSelector((state) => state.user); 
 
   useEffect(() => {
     const fetchListings = async () => {
@@ -85,6 +90,30 @@ const HomePage = () => {
       setLoading(false);
     }
   };
+
+ const handleLikeClick = async (listingId) => {
+  const userId = currentUser._id;
+  if (!userId) {
+    toast.error("User Id is not found");
+    return;
+  }
+  const res = await likeHandle(listingId, userId);
+  console.log("res",res);
+  if (res) {
+    setListings((prev) =>
+      prev.map((item) =>
+        item._id === listingId
+          ? {
+              ...item,
+              liked: res.liked,
+              likesCount: res.likesCount,
+            }
+          : item
+      )
+    );
+  }
+};
+
 
   const filteredListings =
     activeFilter === "All Properties"
@@ -186,18 +215,20 @@ const HomePage = () => {
                 key={listing._id}
                 className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden transform hover:-translate-y-1"
               >
-                <div className="relative h-72">
+                <div className="relative h-60 cursor-pointer">
                   {listing.images[0] ? (
-                    <img
-                      src={`${BACKEND_URL}${listing.images[0]}`}
-                      alt={listing.name}
-                      className="w-full h-full object-cover rounded-t-xl"
-                      onError={(e) => {
-                        e.target.src =
-                          "https://via.placeholder.com/400x224?text=No+Image";
-                        e.target.alt = "Placeholder image";
-                      }}
-                    />
+                    <Link to={`/listing/${listing._id}`}>
+                      <img
+                        src={`${BACKEND_URL}${listing.images[0]}`}
+                        alt={listing.name}
+                        className="w-full h-full object-cover rounded-t-xl"
+                        onError={(e) => {
+                          e.target.src =
+                            "https://via.placeholder.com/400x224?text=No+Image";
+                          e.target.alt = "Placeholder image";
+                        }}
+                      />
+                    </Link>
                   ) : (
                     <div className="w-full h-full flex items-center justify-center bg-gray-200 rounded-t-xl">
                       <span className="text-gray-500 font-medium">
@@ -205,7 +236,8 @@ const HomePage = () => {
                       </span>
                     </div>
                   )}
-                  <span
+                  <div>
+                    <span
                     className={`absolute top-4 right-4 px-3 py-1 rounded-full text-sm font-semibold text-white ${
                       listing.type === "rent" ? "bg-blue-600" : "bg-green-600"
                     }`}
@@ -213,20 +245,29 @@ const HomePage = () => {
                     {listing.type.charAt(0).toUpperCase() +
                       listing.type.slice(1)}
                   </span>
-                  <div className="absolute bottom-4 w-[90%] bg-white/90 backdrop-blur-md p-4 rounded-xl mx-5">
+                  <button
+                  onClick={() => handleLikeClick(listing._id)}
+                  className="absolute top-2 left-2 bg-white/80 backdrop-blur-md p-1.5 rounded-full shadow-md cursor-pointer"
+                  >
+                    <span className="text-red-500 text-xl">
+                      {listing.liked ? "❤️" : "🤍"}
+                    </span>
+                  </button>
+                  </div>
+                  <div className="absolute bottom-4 w-[70%] bg-white/90 backdrop-blur-md p-4 rounded-xl mx-12">
                     {/* Title */}
-                    <h3 className="text-lg font-semibold text-gray-800 truncate">
+                    <h3 className="text-xs font-semibold text-gray-800 truncate">
                       {listing.name}
                     </h3>
 
                     {/* Address */}
-                    <p className="flex items-center text-sm text-gray-600 mt-1 truncate">
+                    <p className="flex items-center text-xs text-gray-600 mt-1 truncate">
                       <FaLocationDot className="mr-1 text-blue-600" />
                       {listing.address}
                     </p>
 
                     {/* Details Row */}
-                    <div className="flex justify-between items-center mt-3 text-gray-700 text-sm">
+                    <div className="flex justify-between items-center mt-3 text-gray-700 text-xs">
                       <span className="flex items-center gap-1">
                         <FaDollarSign className="text-green-600" />
                         {listing.regularPrice}

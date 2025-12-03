@@ -256,7 +256,7 @@ const Combineddashboard = () => {
           <div className="space-y-4">
             {filteredProperties.length > 0 ? (
               filteredProperties.map((property) => (
-                <RecentActivity key={property._id.$oid} property={property} />
+                <RecentActivity key={property._id} property={property} />
               ))
             ) : (
               <p className="text-center text-gray-500">
@@ -274,7 +274,7 @@ const Combineddashboard = () => {
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
           {recentListings.map((property) => (
-            <PropertyCard key={property._id.$oid} property={property} />
+            <PropertyCard key={property._id} property={property} />
           ))}
         </div>
       </div>

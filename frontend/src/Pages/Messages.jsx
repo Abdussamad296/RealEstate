@@ -9,7 +9,7 @@ import {
   CheckCheck,
 } from "lucide-react";
 
-const socket = io("http://localhost:5000");
+const socket = io("http://localhost:3000");
 
 const Messages = () => {
   const [conversations, setConversations] = useState([

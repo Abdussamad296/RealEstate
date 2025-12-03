@@ -75,7 +75,9 @@ export const createListing = async (req, res) => {
       }
 
       const parsedRegularPrice = parseFloat(regularPrice);
-      const parsedDiscountedPrice = discountedPrice ? parseFloat(discountedPrice) : 0;
+      const parsedDiscountedPrice = discountedPrice
+        ? parseFloat(discountedPrice)
+        : 0;
       const parsedBedrooms = parseInt(bedrooms);
       const parsedBathrooms = parseInt(bathrooms);
 
@@ -96,7 +98,11 @@ export const createListing = async (req, res) => {
         });
       }
 
-      if (offer === "true" && (parsedDiscountedPrice >= parsedRegularPrice || parsedDiscountedPrice <= 0)) {
+      if (
+        offer === "true" &&
+        (parsedDiscountedPrice >= parsedRegularPrice ||
+          parsedDiscountedPrice <= 0)
+      ) {
         return errorHandler(res, 400, "Validation Error", {
           msg: "Discounted price must be less than regular price and greater than 0.",
         });
@@ -129,7 +135,9 @@ export const createListing = async (req, res) => {
         });
       }
 
-      const imageUrls = req.files.map((file) => `/uploads/listings/${file.filename}`);
+      const imageUrls = req.files.map(
+        (file) => `/uploads/listings/${file.filename}`
+      );
 
       const listing = await Listing.create({
         name: name.trim(),
@@ -155,7 +163,8 @@ export const createListing = async (req, res) => {
       if (req.files) {
         req.files.forEach((file) => {
           fs.unlink(path.join(uploadDir, file.filename), (err) => {
-            if (err) console.error(`Failed to delete file ${file.filename}:`, err);
+            if (err)
+              console.error(`Failed to delete file ${file.filename}:`, err);
           });
         });
       }
@@ -197,7 +206,10 @@ export const updateListing = async (req, res) => {
       let existingImages = listing.images;
       if (existingStr) {
         try {
-          existingImages = typeof existingStr === "string" ? JSON.parse(existingStr) : existingStr;
+          existingImages =
+            typeof existingStr === "string"
+              ? JSON.parse(existingStr)
+              : existingStr;
           if (!Array.isArray(existingImages)) {
             throw new Error("existingImages must be an array");
           }
@@ -208,7 +220,9 @@ export const updateListing = async (req, res) => {
         }
       }
 
-      const removedImages = listing.images.filter((url) => !existingImages.includes(url));
+      const removedImages = listing.images.filter(
+        (url) => !existingImages.includes(url)
+      );
       removedImages.forEach((url) => {
         const filePath = path.join(process.cwd(), url);
         fs.unlink(filePath, (err) => {
@@ -216,7 +230,9 @@ export const updateListing = async (req, res) => {
         });
       });
 
-      const newImageUrls = req.files ? req.files.map((file) => `/uploads/listings/${file.filename}`) : [];
+      const newImageUrls = req.files
+        ? req.files.map((file) => `/uploads/listings/${file.filename}`)
+        : [];
       const updatedImages = [...existingImages, ...newImageUrls];
 
       if (updatedImages.length === 0) {
@@ -243,7 +259,9 @@ export const updateListing = async (req, res) => {
       }
 
       const parsedRegularPrice = parseFloat(regularPrice);
-      const parsedDiscountedPrice = discountedPrice ? parseFloat(discountedPrice) : 0;
+      const parsedDiscountedPrice = discountedPrice
+        ? parseFloat(discountedPrice)
+        : 0;
       const parsedBedrooms = parseInt(bedrooms);
       const parsedBathrooms = parseInt(bathrooms);
 
@@ -264,7 +282,11 @@ export const updateListing = async (req, res) => {
         });
       }
 
-      if (offer === "true" && (parsedDiscountedPrice >= parsedRegularPrice || parsedDiscountedPrice <= 0)) {
+      if (
+        offer === "true" &&
+        (parsedDiscountedPrice >= parsedRegularPrice ||
+          parsedDiscountedPrice <= 0)
+      ) {
         return errorHandler(res, 400, "Validation Error", {
           msg: "Discounted price must be less than regular price and greater than 0.",
         });
@@ -313,7 +335,8 @@ export const updateListing = async (req, res) => {
       if (req.files) {
         req.files.forEach((file) => {
           fs.unlink(path.join(uploadDir, file.filename), (err) => {
-            if (err) console.error(`Failed to delete file ${file.filename}:`, err);
+            if (err)
+              console.error(`Failed to delete file ${file.filename}:`, err);
           });
         });
       }
@@ -367,19 +390,19 @@ export const getUserListings = async (req, res) => {
     }
 
     // Fetch listings created by this user
-    const listings = await Listing.find({ userRef: userRef }).sort({ createdAt: -1 });
-    console.log("listing>>>",listings)
+    const listings = await Listing.find({ userRef: userRef }).sort({
+      createdAt: -1,
+    });
 
     if (listings.length === 0) {
       return errorHandler(res, 404, "No Listings Found", {
         msg: "You have not created any listings yet.",
       });
     }
-
     return res.status(200).json({
       msg: "Listings retrieved successfully",
       userEmail: user.email, // Include user's email
-      data: listings,        // Include user's listings
+      data: listings, // Include user's listings
     });
   } catch (err) {
     console.error("Error fetching user listings:", err);
@@ -389,32 +412,41 @@ export const getUserListings = async (req, res) => {
 
 export const getRecentListings = async (req, res) => {
   try {
-    // Fetch recent listings
+    const currentUserId = req.user?.id;
+
     const listings = await Listing.find()
       .sort({ createdAt: -1 })
       .limit(6)
-      .lean(); 
+      .lean();
 
-    // Fetch user emails for each listing
-    const listingsWithEmails = await Promise.all(
+    const finalListings = await Promise.all(
       listings.map(async (listing) => {
-        const user = await User.findById(listing.userRef).select("email");
+        const user = await User.findById(listing.userRef).select(
+          "email username"
+        );
+
+        const likeIds = listing.likes?.map(id => id.toString()) || [];
+
         return {
           ...listing,
           userEmail: user?.email || null,
+          userName: user?.username || null,
+          likesCount: likeIds.length,
+          liked: likeIds.includes(currentUserId),
         };
       })
     );
 
     return res.status(200).json({
       msg: "Recent listings retrieved successfully",
-      data: listingsWithEmails,
+      data: finalListings,
     });
   } catch (err) {
     console.error("Error fetching recent listings:", err);
-    return serverHandlerError(res, err);
+    return res.status(500).json({ message: "Server Error" });
   }
 };
+
 
 
 export const getListingById = async (req, res) => {
@@ -426,12 +458,13 @@ export const getListingById = async (req, res) => {
     }
 
     // Fetch the user who created this listing
-    const user = await User.findById(listing.userRef).select("email");
+    const user = await User.findById(listing.userRef).select("email username");
     console.log("user:", user);
     // Merge user email into the listing
     const listingWithEmail = {
       ...listing,
       userEmail: user?.email || null,
+      userName: user?.username || null,
     };
 
     return res.status(200).json({
@@ -442,4 +475,32 @@ export const getListingById = async (req, res) => {
     console.error("Error fetching listing:", err);
     return serverHandlerError(res, err);
   }
-} ;
+};
+
+export const toggleLike = async (req, res) => {
+  try {
+    const {userId} = req.body;
+    const { id: listingId } = req.params;
+    const listing = await Listing.findById(listingId);
+    if (!listing) {
+      return res.status(404).json({
+        message: "Listing not found",
+      });
+    }
+    const alreadyLiked = listing.likes.includes(userId);
+    if (alreadyLiked) {
+      listing.likes.pull(userId);
+    } else {
+      listing.likes.push(userId);
+    }
+    await listing.save();
+    return res.status(200).json({
+      success: true,
+      liked: !alreadyLiked,
+      likesCount: listing.likes.length,
+    });
+  } catch (err) {
+    console.err(err);
+    res.status(500).json({ message: "Server Error" });
+  }
+};
