@@ -8,37 +8,15 @@ import {
   Check,
   CheckCheck,
 } from "lucide-react";
+import { useSelector } from "react-redux";
+import axios from "axios";
+import toast from "react-hot-toast";
 
 const socket = io("http://localhost:3000");
 
 const Messages = () => {
-  const [conversations, setConversations] = useState([
-    {
-      id: 1,
-      name: "Agent John",
-      lastMessage: "Sure, let's schedule a visit.",
-      time: "2:30 PM",
-      online: true,
-      unread: 2,
-    },
-    {
-      id: 2,
-      name: "Buyer Alex",
-      lastMessage: "Can I get more photos?",
-      time: "1:15 PM",
-      online: false,
-      unread: 0,
-    },
-    {
-      id: 3,
-      name: "Sarah (Seller)",
-      lastMessage: "Thanks! Closing went smooth.",
-      time: "Yesterday",
-      online: true,
-      unread: 0,
-    },
-  ]);
-
+  const { currentUser } = useSelector((state) => state.user);
+  const [conversations, setConversations] = useState([]);
   const [selectedChat, setSelectedChat] = useState(null);
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
@@ -55,43 +33,94 @@ const Messages = () => {
   }, [messages]);
 
   useEffect(() => {
-    socket.on("receiveMessage", (data) => {
-      if (selectedChat && data.senderId === selectedChat.id) {
-        setMessages((prev) => [...prev, { ...data, read: false }]);
+    socket.on("receiveChatMessage", (msg) => {
+      if (!selectedChat) return;
+
+      if (String(msg.listingId) !== String(selectedChat.listingId)) return;
+
+      const isFromOtherUser =
+        (msg.sender === "buyer" &&
+          String(msg.buyerId) === String(selectedChat.otherUserId)) ||
+        (msg.sender === "seller" &&
+          String(msg.sellerId) === String(selectedChat.otherUserId));
+
+      if (isFromOtherUser) {
+        setMessages((prev) => [...prev, msg]);
       }
+
+      // Always update sidebar preview (last message + time)
+      setConversations((prev) =>
+        prev.map((c) =>
+          String(c.listingId) === String(msg.listingId)
+            ? { ...c, lastMessage: msg.message, time: new Date() }
+            : c
+        )
+      );
     });
 
-    return () => socket.off("receiveMessage");
+    return () => socket.off("receiveChatMessage");
   }, [selectedChat]);
 
-  const handleSend = (e) => {
-    e.preventDefault();
-    if (!newMessage.trim()) return;
+  useEffect(() => {
+    const fetchConversations = async () => {
+      if (!currentUser) return;
+      try {
+        const res = await axios.get(
+          "http://localhost:3000/api/message/conversations",
+          { withCredentials: true }
+        );
+        setConversations(res.data);
+      } catch (err) {
+        console.log("Failed to load chats", err);
+      }
+    };
+    fetchConversations();
+  }, [currentUser]);
 
-    const msg = {
-      senderId: "currentUserId",
-      receiverId: selectedChat?.id,
-      text: newMessage,
-      timestamp: new Date(),
-      read: false,
+  const handleSend = async (e) => {
+    e.preventDefault();
+    if (!newMessage.trim() || !selectedChat || !currentUser) return;
+
+    console.log("selected chat", selectedChat);
+
+    const messageData = {
+      listingId: selectedChat.listingId,
+      buyerId: selectedChat.buyerId,
+      sellerId: selectedChat.sellerId,
+      message: newMessage.trim(),
+      sender: currentUser._id === selectedChat.buyerId ? "buyer" : "seller",
     };
 
-    socket.emit("sendMessage", msg);
-    setMessages((prev) => [...prev, { ...msg, read: true }]);
-    setNewMessage("");
+    const tempId = Date.now();
+    setMessages((prev) => [
+      ...prev,
+      {
+        ...messageData,
+        _id: tempId,
+        createdAt: new Date(),
+        senderId: currentUser._id, // for UI
+      },
+    ]);
 
-    // Update last message in sidebar
-    setConversations((prev) =>
-      prev.map((c) =>
-        c.id === selectedChat.id
-          ? { ...c, lastMessage: newMessage, time: "Just now" }
-          : c
-      )
-    );
+    try {
+      const res = await axios.post(
+        "http://localhost:3000/api/message/send",
+        messageData,
+        { withCredentials: true }
+      );
+
+      setMessages((prev) => prev.map((m) => (m._id === tempId ? res.data : m)));
+      socket.emit("sendChatMessage", res.data);
+    } catch (err) {
+      toast.error("Failed to send message");
+      setMessages((prev) => prev.filter((m) => m._id !== tempId));
+    }
+
+    setNewMessage("");
   };
 
   const filteredConversations = conversations.filter((chat) =>
-    chat.name.toLowerCase().includes(searchQuery.toLowerCase())
+    chat.otherUserName.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const formatTime = (date) => {
@@ -133,11 +162,20 @@ const Messages = () => {
         {/* Chat List */}
         <div className="flex-1 overflow-y-auto">
           {filteredConversations.map((chat) => (
+            console.log("chatting",chat),
             <div
               key={chat.id}
-              onClick={() => {
+              onClick={async () => {
                 setSelectedChat(chat);
-                setMessages([]); // In real app: load messages
+                try {
+                  const res = await axios.get(
+                    `http://localhost:3000/api/message/chat/${chat.listingId}/${chat.otherUserId}`,
+                    { withCredentials: true }
+                  );
+                  setMessages(res.data.messages || []);
+                } catch (err) {
+                  setMessages([]);
+                }
               }}
               className={`p-3 flex items-center gap-3 cursor-pointer transition-all hover:bg-gray-50 dark:hover:bg-gray-700/50 border-b border-gray-100 dark:border-gray-700 ${
                 selectedChat?.id === chat.id
@@ -147,7 +185,7 @@ const Messages = () => {
             >
               <div className="relative">
                 <div className="w-10 h-10 bg-gradient-to-br from-yellow-400 to-amber-500 rounded-full flex items-center justify-center text-white font-bold text-lg">
-                  {chat.name[0]}
+                  {chat.otherUserName?.[0] || "?"}
                 </div>
                 {chat.online && (
                   <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
@@ -157,7 +195,7 @@ const Messages = () => {
               <div className="flex-1 min-w-0">
                 <div className="flex justify-between items-baseline">
                   <p className="font-semibold text-gray-900 dark:text-white truncate text-lg">
-                    {chat.name}
+                    {chat.otherUserName}
                   </p>
                   <p className="text-xs text-gray-500 dark:text-gray-400">
                     {chat.time}
@@ -188,7 +226,7 @@ const Messages = () => {
                 <div className="flex items-center gap-3">
                   <div className="relative">
                     <div className="w-10 h-10 bg-gradient-to-br from-yellow-400 to-amber-500 rounded-full flex items-center justify-center text-white font-bold">
-                      {selectedChat.name[0]}
+                      {selectedChat.otherUserName[0]}
                     </div>
                     {selectedChat.online && (
                       <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
@@ -196,7 +234,7 @@ const Messages = () => {
                   </div>
                   <div>
                     <p className="font-semibold text-gray-900 dark:text-white">
-                      {selectedChat.name}
+                      {selectedChat.otherUserName}
                     </p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
                       {selectedChat.online
@@ -220,44 +258,56 @@ const Messages = () => {
                   <p className="text-sm">Start the conversation!</p>
                 </div>
               ) : (
-                messages.map((msg, i) => (
-                  <div
-                    key={i}
-                    className={`flex ${
-                      msg.senderId === "currentUserId"
-                        ? "justify-end"
-                        : "justify-start"
-                    }`}
-                  >
+                messages.map((msg, i) => {
+
+                  const isMyMessage =
+                    msg.sender === "me" ||
+                    (msg.sender === "buyer" &&
+                      currentUser?._id === msg.buyerId?._id) ||
+                    (msg.sender === "seller" &&
+                      currentUser?._id === msg.sellerId?._id);
+
+                  return (
                     <div
-                      className={`group relative max-w-xs lg:max-w-md px-4 py-3 rounded-2xl shadow-sm transition-all ${
-                        msg.senderId === "currentUserId"
-                          ? "bg-gradient-to-r from-yellow-400 to-amber-500 text-white"
-                          : "bg-white dark:bg-gray-800 text-gray-800 dark:text-white border border-gray-200 dark:border-gray-700"
+                      key={msg._id || i}
+                      className={`flex ${
+                        isMyMessage ? "justify-end" : "justify-start"
                       }`}
                     >
-                      <p className="text-sm lg:text-base">{msg.text}</p>
                       <div
-                        className={`flex items-center gap-1 mt-1 text-xs ${
-                          msg.senderId === "currentUserId"
-                            ? "text-yellow-100"
-                            : "text-gray-500 dark:text-gray-400"
+                        className={`group relative max-w-xs lg:max-w-md px-4 py-3 rounded-2xl shadow-sm transition-all ${
+                          isMyMessage
+                            ? "bg-gradient-to-r from-yellow-400 to-amber-500 text-white"
+                            : "bg-white dark:bg-gray-800 text-gray-800 dark:text-white border border-gray-200 dark:border-gray-700"
                         }`}
                       >
-                        <span>{formatTime(msg.timestamp)}</span>
-                        {msg.senderId === "currentUserId" && (
-                          <>
-                            {msg.read ? (
-                              <CheckCheck className="h-3.5 w-3.5" />
-                            ) : (
-                              <Check className="h-3.5 w-3.5" />
-                            )}
-                          </>
-                        )}
+                        <p className="text-sm lg:text-base break-words">
+                          {msg.message || msg.text}
+                        </p>
+                        <div
+                          className={`flex items-center gap-1 mt-1 text-xs ${
+                            isMyMessage
+                              ? "text-yellow-100"
+                              : "text-gray-500 dark:text-gray-400"
+                          }`}
+                        >
+                          <span>
+                            {formatTime(msg.createdAt || msg.timestamp)}
+                          </span>
+                          {isMyMessage && (
+                            <>
+                              {msg.isRead ? (
+                                <CheckCheck className="h-3.5 w-3.5" />
+                              ) : (
+                                <Check className="h-3.5 w-3.5" />
+                              )}
+                            </>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))
+                  );
+                })
               )}
               <div ref={messagesEndRef} />
             </div>

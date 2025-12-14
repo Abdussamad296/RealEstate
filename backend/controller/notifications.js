@@ -1,7 +1,7 @@
 import Notification from "../model/notification.model.js";
 import { errorHandler } from "../utils/error.js";
 
-export const getDropdownNotifications = async (req, res) => {
+export const getDropdownNotifications = async(req, res) => {
   const userId = req.user.id;
   try {
     const notification = await Notification.find({ recipient: userId })

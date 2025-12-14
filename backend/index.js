@@ -18,6 +18,7 @@ import dashboardRouter from "./routes/dashboard.js";
 import homeRouter from "./routes/homePage.js";
 import bookingRouter from "./routes/booking.route.js";
 import notificationRouter from "./routes/notification.js";
+import messageRouter from "./routes/message.js";  
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -38,6 +39,7 @@ app.use("/api/dashboard", dashboardRouter);
 app.use("/api/home", homeRouter);
 app.use("/api/booking", bookingRouter);
 app.use("/api/notifications", notificationRouter);
+app.use("/api/message", messageRouter)
 
 // CRITICAL: Create server + init Socket.IO BEFORE server.listen()
 const server = http.createServer(app);
@@ -49,6 +51,7 @@ initSocket(server, {
     credentials: true
   }
 });
+app.set("onlineUsers", global.onlineUsers);
 
 // Start listening
 server.listen(PORT, () => {

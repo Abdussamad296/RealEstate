@@ -120,7 +120,6 @@ const PerfectHome = ({ searchRef, featuredRef }) => {
     const fetchAgents = async () => {
       try {
         const res = await getAllUsers();;
-        console.log("res", res.data);
         setAgents(res.data || []);
       } catch (err) {
         console.error("Failed to load agents:", err);

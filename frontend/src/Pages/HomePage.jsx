@@ -12,10 +12,10 @@ import ReviewProperties from "./homepage/ReviewProperties";
 import Footer from "./homepage/Footer";
 import axios from "axios";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import ListingDetails from "./ListingDetails";
 import { useSelector } from "react-redux";
 import toast from "react-hot-toast";
 import { likeHandle } from "../Service/like.service";
+import { useSocket } from "../context/SocketContext";
 
 const BACKEND_URL = "http://localhost:3000";
 
@@ -33,7 +33,9 @@ const HomePage = () => {
 
   const searchRef = useRef(null);
   const featuredRef = useRef(null);
-  const {currentUser} = useSelector((state) => state.user); 
+
+  const socket = useSocket();
+  const { currentUser } = useSelector((state) => state.user);
 
   useEffect(() => {
     const fetchListings = async () => {
@@ -91,29 +93,43 @@ const HomePage = () => {
     }
   };
 
- const handleLikeClick = async (listingId) => {
-  const userId = currentUser._id;
-  if (!userId) {
-    toast.error("User Id is not found");
-    return;
-  }
-  const res = await likeHandle(listingId, userId);
-  console.log("res",res);
-  if (res) {
-    setListings((prev) =>
-      prev.map((item) =>
-        item._id === listingId
-          ? {
-              ...item,
-              liked: res.liked,
-              likesCount: res.likesCount,
-            }
-          : item
-      )
-    );
-  }
-};
+  const handleLikeClick = async (listingId) => {
+    if (!currentUser?._id) {
+      toast.error("Please login to like");
+      return;
+    }
 
+    try {
+      const res = await likeHandle(listingId, currentUser._id);
+
+      if (res.success) {
+        setListings((prev) =>
+          prev.map((item) =>
+            item._id === listingId
+              ? { ...item, liked: res.liked, likesCount: res.likesCount }
+              : item
+          )
+        );
+
+        // THIS WILL NOW WORK 100%
+        if (res.liked && socket) {
+          console.log("Emitting propertyLiked event...");
+          socket.emit("propertyLiked", {
+            listingId,
+            listingName: res.listingName,
+            buyerName: currentUser.username || currentUser.name || "Someone",
+            ownerId: res.ownerId, // ← Now guaranteed to exist
+          });
+        }
+
+        toast.success(
+          res.liked ? "Added to favorites" : "Removed from favorites"
+        );
+      }
+    } catch (err) {
+      toast.error("Failed to like");
+    }
+  };
 
   const filteredListings =
     activeFilter === "All Properties"
@@ -217,7 +233,19 @@ const HomePage = () => {
               >
                 <div className="relative h-60 cursor-pointer">
                   {listing.images[0] ? (
-                    <Link to={`/listing/${listing._id}`}>
+                    <Link
+                      to={`/listing/${listing._id}`}
+                      onClick={() => {
+                        if (socket) {
+                          socket.emit("propertyViewed", {
+                            listingId: listing._id,
+                            listingName: listing.name,
+                            buyerName: currentUser?.username || "Guest",
+                            ownerId: listing.userRef,
+                          });
+                        }
+                      }}
+                    >
                       <img
                         src={`${BACKEND_URL}${listing.images[0]}`}
                         alt={listing.name}
@@ -225,7 +253,6 @@ const HomePage = () => {
                         onError={(e) => {
                           e.target.src =
                             "https://via.placeholder.com/400x224?text=No+Image";
-                          e.target.alt = "Placeholder image";
                         }}
                       />
                     </Link>
@@ -238,21 +265,21 @@ const HomePage = () => {
                   )}
                   <div>
                     <span
-                    className={`absolute top-4 right-4 px-3 py-1 rounded-full text-sm font-semibold text-white ${
-                      listing.type === "rent" ? "bg-blue-600" : "bg-green-600"
-                    }`}
-                  >
-                    {listing.type.charAt(0).toUpperCase() +
-                      listing.type.slice(1)}
-                  </span>
-                  <button
-                  onClick={() => handleLikeClick(listing._id)}
-                  className="absolute top-2 left-2 bg-white/80 backdrop-blur-md p-1.5 rounded-full shadow-md cursor-pointer"
-                  >
-                    <span className="text-red-500 text-xl">
-                      {listing.liked ? "❤️" : "🤍"}
+                      className={`absolute top-4 right-4 px-3 py-1 rounded-full text-sm font-semibold text-white ${
+                        listing.type === "rent" ? "bg-blue-600" : "bg-green-600"
+                      }`}
+                    >
+                      {listing.type.charAt(0).toUpperCase() +
+                        listing.type.slice(1)}
                     </span>
-                  </button>
+                    <button
+                      onClick={() => handleLikeClick(listing._id)}
+                      className="absolute top-2 left-2 bg-white/80 backdrop-blur-md p-1.5 rounded-full shadow-md cursor-pointer"
+                    >
+                      <span className="text-red-500 text-xl">
+                        {listing.liked ? "❤️" : "🤍"}
+                      </span>
+                    </button>
                   </div>
                   <div className="absolute bottom-4 w-[70%] bg-white/90 backdrop-blur-md p-4 rounded-xl mx-12">
                     {/* Title */}

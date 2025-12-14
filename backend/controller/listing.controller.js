@@ -477,30 +477,43 @@ export const getListingById = async (req, res) => {
   }
 };
 
+
 export const toggleLike = async (req, res) => {
   try {
-    const {userId} = req.body;
+    const { userId } = req.body;
     const { id: listingId } = req.params;
+
+    if (!userId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
     const listing = await Listing.findById(listingId);
     if (!listing) {
-      return res.status(404).json({
-        message: "Listing not found",
-      });
+      return res.status(404).json({ message: "Listing not found" });
     }
-    const alreadyLiked = listing.likes.includes(userId);
+
+    const userObjectId = userId; // already string from req.body
+    const alreadyLiked = listing.likes.some(id => id.toString() === userObjectId);
+
     if (alreadyLiked) {
-      listing.likes.pull(userId);
+      // Unlike
+      listing.likes.pull(userObjectId);
     } else {
-      listing.likes.push(userId);
+      // Like — even if it's the owner
+      listing.likes.push(userObjectId);
     }
+
     await listing.save();
+
     return res.status(200).json({
       success: true,
-      liked: !alreadyLiked,
+      liked: !alreadyLiked,          
       likesCount: listing.likes.length,
+      ownerId: listing.userRef.toString(),
+      listingName: listing.name,
     });
   } catch (err) {
-    console.err(err);
+    console.error("Like toggle error:", err);
     res.status(500).json({ message: "Server Error" });
   }
 };

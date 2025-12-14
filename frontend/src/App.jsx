@@ -20,13 +20,14 @@ import Messages from "./Pages/Messages";
 import PropertyList from "./Pages/PropertyList ";
 import { SocketProvider } from "./context/SocketContext";
 import useSocketNotifications from "./hooks/useSocketNotifications";
+import { useSelector } from "react-redux";
 
 const App = () => {
-  const loggedInUser = JSON.parse(localStorage.getItem("user")) || null;
+  const {currentUser} = useSelector((state) => state.user);
   useSocketNotifications();
   return (
     <div>
-      <SocketProvider user={loggedInUser}>
+      <SocketProvider user={currentUser}>
         <BrowserRouter>
           <Header />
 

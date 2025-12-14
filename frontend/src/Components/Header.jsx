@@ -9,8 +9,9 @@ import {
   FaCheck,
   FaCheckDouble,
 } from "react-icons/fa";
-import { io as ClientIO } from "socket.io-client";
 import axios from "axios";
+import { useSocket } from "../context/SocketContext";
+import toast from "react-hot-toast";
 
 // Define navigation links for cleaner rendering
 const navLinks = [
@@ -19,47 +20,50 @@ const navLinks = [
   { name: "Contact", path: "/contact" },
 ];
 
-const SOCKET_SERVER_URL =
-  import.meta.env.VITE_SOCKET_SERVER_URL || "http://localhost:3000";
+import.meta.env.VITE_SOCKET_SERVER_URL || "http://localhost:3000";
 
 const Header = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [notifications, setNotifications] = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [socket, setSocket] = useState(null);
   const navigate = useNavigate();
   const location = useLocation();
-  const { currentUser } = useSelector((state) => state.user) || {
-    currentUser: null,
-  };
+  const { currentUser } = useSelector((state) => state.user);
   const [showAll, setShowAll] = useState(false);
   const [page, setPage] = useState(1);
+  const socket = useSocket();
 
   useEffect(() => {
-    if (!currentUser) return;
+    if (!currentUser || !socket) return;
 
-    const newSocket = ClientIO(SOCKET_SERVER_URL, {
-      transports: ["websocket"],
-      withCredentials: true,
-    });
-    setSocket(newSocket);
+    socket.emit("registerUser", currentUser._id);
 
-    newSocket.on("connect", () => {
-      console.log("Connected to socket", newSocket.id);
-      // register userId with server so server knows which socket to emit to
-      newSocket.emit("registerUser", currentUser._id);
-    });
+    const handleNotification = (data) => {
+      console.log("Real-time notification received:", data);
 
-    newSocket.on("disconnect", () => console.log("Socket Disconnnected"));
+      toast.success(data.title || data.body);
 
-    newSocket.on("newNotification", (notification) => {
-      setNotifications((prev) => [notification, ...prev]);
-    });
-    return () => {
-      newSocket.disconnect();
+      setNotifications((prev) => [
+        {
+          _id: data._id,
+          title: data.title,
+          body: data.body,
+          createdAt: data.createdAt,
+          isRead: data.isRead || false,
+          sender: data.sender || null,
+          meta: data.meta || {},
+        },
+        ...prev,
+      ]);
     };
-  }, [currentUser]);
+
+    socket.on("notification", handleNotification);
+
+    return () => {
+      socket.off("notification", handleNotification);
+    };
+  }, [currentUser, socket]);
 
   const timeAgo = (date) => {
     const seconds = Math.floor((new Date() - new Date(date)) / 1000);
@@ -328,6 +332,9 @@ const Header = () => {
 
                           <div className="flex-1">
                             {/* Body Text */}
+                            <p className="text-sm font-semibold text-gray-900">
+                              {notif.title}
+                            </p>
                             <p className="text-sm text-gray-800 leading-snug">
                               {notif.body}
                             </p>
