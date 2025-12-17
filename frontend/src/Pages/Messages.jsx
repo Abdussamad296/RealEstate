@@ -33,6 +33,13 @@ const Messages = () => {
   }, [messages]);
 
   useEffect(() => {
+    const interval = setInterval(() => {
+      setMessages((prev) => [...prev]);
+    }, 60000);
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
     socket.on("receiveChatMessage", (msg) => {
       if (!selectedChat) return;
 
@@ -138,6 +145,28 @@ const Messages = () => {
     return msgDate.toLocaleDateString();
   };
 
+  const timeAgo = (date) => {
+    if (!date) return "";
+
+    const now = new Date();
+    const past = new Date(date);
+    const diff = Math.floor((now - past) / 1000);
+
+    if (diff < 60) return "Just now";
+
+    const minutes = Math.floor(diff / 60);
+    if (minutes < 60) return `${minutes} min ago`;
+
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours} h ago`;
+
+    const days = Math.floor(hours / 24);
+    if (days === 1) return "Yesterday";
+    if (days < 7) return `${days} days ago`;
+
+    return past.toLocaleDateString(); // fallback
+  };
+
   return (
     <div className="flex h-screen bg-gradient-to-br from-slate-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 mt-20">
       {/* Sidebar */}
@@ -161,58 +190,62 @@ const Messages = () => {
 
         {/* Chat List */}
         <div className="flex-1 overflow-y-auto">
-          {filteredConversations.map((chat) => (
-            console.log("chatting",chat),
-            <div
-              key={chat.id}
-              onClick={async () => {
-                setSelectedChat(chat);
-                try {
-                  const res = await axios.get(
-                    `http://localhost:3000/api/message/chat/${chat.listingId}/${chat.otherUserId}`,
-                    { withCredentials: true }
-                  );
-                  setMessages(res.data.messages || []);
-                } catch (err) {
-                  setMessages([]);
-                }
-              }}
-              className={`p-3 flex items-center gap-3 cursor-pointer transition-all hover:bg-gray-50 dark:hover:bg-gray-700/50 border-b border-gray-100 dark:border-gray-700 ${
-                selectedChat?.id === chat.id
-                  ? "bg-yellow-50/50 dark:bg-yellow-900/20"
-                  : ""
-              }`}
-            >
-              <div className="relative">
-                <div className="w-10 h-10 bg-gradient-to-br from-yellow-400 to-amber-500 rounded-full flex items-center justify-center text-white font-bold text-lg">
-                  {chat.otherUserName?.[0] || "?"}
-                </div>
-                {chat.online && (
-                  <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
-                )}
-              </div>
+          {filteredConversations.map(
+            (chat) => (
+              console.log("chatting", chat),
+              (
+                <div
+                  key={chat.id}
+                  onClick={async () => {
+                    setSelectedChat(chat);
+                    try {
+                      const res = await axios.get(
+                        `http://localhost:3000/api/message/chat/${chat.listingId}/${chat.otherUserId}`,
+                        { withCredentials: true }
+                      );
+                      setMessages(res.data.messages || []);
+                    } catch (err) {
+                      setMessages([]);
+                    }
+                  }}
+                  className={`p-3 flex items-center gap-3 cursor-pointer transition-all hover:bg-gray-50 dark:hover:bg-gray-700/50 border-b border-gray-100 dark:border-gray-700 ${
+                    selectedChat?.id === chat.id
+                      ? "bg-yellow-50/50 dark:bg-yellow-900/20"
+                      : ""
+                  }`}
+                >
+                  <div className="relative">
+                    <div className="w-10 h-10 bg-gradient-to-br from-yellow-400 to-amber-500 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                      {chat.otherUserName?.[0] || "?"}
+                    </div>
+                    {chat.online && (
+                      <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
+                    )}
+                  </div>
 
-              <div className="flex-1 min-w-0">
-                <div className="flex justify-between items-baseline">
-                  <p className="font-semibold text-gray-900 dark:text-white truncate text-lg">
-                    {chat.otherUserName}
-                  </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
-                    {chat.time}
-                  </p>
-                </div>
-                <p className="text-sm text-gray-600 dark:text-gray-300 truncate">
-                  {chat.lastMessage}
-                </p>
-              </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex justify-between items-baseline">
+                      <p className="font-semibold text-gray-900 dark:text-white truncate text-lg">
+                        {chat.otherUserName}
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        {timeAgo(chat.time)}
+                      </p>
+                    </div>
+                    <p className="text-sm text-gray-600 dark:text-gray-300 truncate">
+                      {chat.lastMessage}
+                    </p>
+                  </div>
 
-              {chat.unread > 0 && (
-                <div className="w-6 h-6 bg-yellow-500 text-white rounded-full flex items-center justify-center text-xs font-bold">
-                  {chat.unread}
+                  {chat.unread > 0 && (
+                    <div className="w-6 h-6 bg-yellow-500 text-white rounded-full flex items-center justify-center text-xs font-bold">
+                      {chat.unread}
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
-          ))}
+              )
+            )
+          )}
         </div>
       </div>
 
@@ -239,7 +272,8 @@ const Messages = () => {
                     <p className="text-xs text-gray-500 dark:text-gray-400">
                       {selectedChat.online
                         ? "Active now"
-                        : "Last seen recently"}
+                        : `Active ${timeAgo(selectedChat.time)}`
+                        }
                     </p>
                   </div>
                 </div>
@@ -259,7 +293,6 @@ const Messages = () => {
                 </div>
               ) : (
                 messages.map((msg, i) => {
-
                   const isMyMessage =
                     msg.sender === "me" ||
                     (msg.sender === "buyer" &&
